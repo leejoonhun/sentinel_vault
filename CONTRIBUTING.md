@@ -44,7 +44,7 @@ We welcome many types of contributions:
 ### Prerequisites
 
 - [Foundry](https://getfoundry.sh/) - Solidity development
-- [Python 3.11+](https://www.python.org/)
+- [Python 3.11 or 3.12](https://www.python.org/)
 - [uv](https://docs.astral.sh/uv/) - Python package manager
 - [Git](https://git-scm.com/)
 
