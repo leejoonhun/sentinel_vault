@@ -1,5 +1,4 @@
-"""
-Sentinel Keeper - Order models.
+"""Order models.
 
 Pydantic models matching on-chain Order struct.
 """

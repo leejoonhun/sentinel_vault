@@ -1,4 +1,0 @@
-"""Config module.
-
-Configuration loading and validation.
-"""

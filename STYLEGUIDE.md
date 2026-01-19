@@ -400,17 +400,57 @@ async def get_order(order_id: int) -> Optional[Order]:
 ### Logging Convention
 
 ```python
-import structlog
+from ..observability.logger import get_logger
 
-log = structlog.get_logger()
+log = get_logger()
 
-# ✅ Good - structured logging
+# ✅ Good - structured logging with rich
 log.info("order_created", order_id=123, owner="0x...")
 log.error("execution_failed", order_id=123, error=str(e))
+
+# Domain-specific methods
+log.keeper_starting(chain_id=1, vault_address="0x...")
+log.order_executed(order_id=123, keeper="0x...", gas_used=150000, amount_out=1000)
 
 # ❌ Bad - unstructured logging
 log.info(f"Order {order_id} created by {owner}")
 ```
+
+### Import Conventions
+
+```python
+# =========================================================================
+# Import Order (enforced by ruff/isort)
+# =========================================================================
+# 1. Standard library
+# 2. Third-party packages
+# 3. Local imports (relative)
+
+# =========================================================================
+# Relative vs Absolute Imports
+# =========================================================================
+
+# ✅ Good - Relative imports for internal modules
+from .config import get_settings
+from ..models.order import Order
+from ..observability.logger import get_logger
+
+# ✅ Good - Absolute imports for third-party packages
+from pydantic import BaseModel
+from web3 import Web3
+
+# ❌ Bad - Absolute imports for internal modules
+from sentinel_keeper.config import get_settings
+from sentinel_keeper.models.order import Order
+```
+
+**Import Guidelines:**
+
+| Import Type                     | When to Use              | Example                            |
+| ------------------------------- | ------------------------ | ---------------------------------- |
+| Relative (`from .` / `from ..`) | Internal package modules | `from ..models.order import Order` |
+| Absolute                        | Third-party packages     | `from web3 import Web3`            |
+| Absolute                        | System paths (env vars)  | `Path(os.environ["CONFIG_PATH"])`  |
 
 ---
 
