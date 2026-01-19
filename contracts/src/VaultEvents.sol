@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import { OrderKind } from "./VaultTypes.sol";
+import {OrderKind} from "./VaultTypes.sol";
 
 /**
  * @title VaultEvents
@@ -32,9 +32,7 @@ event OrderCancelled(uint256 indexed orderId);
 /// @param keeper Address of the keeper that executed the order
 /// @param amountIn Amount of input tokens spent
 /// @param amountOut Amount of output tokens received
-event OrderExecuted(
-    uint256 indexed orderId, address indexed keeper, uint256 amountIn, uint256 amountOut
-);
+event OrderExecuted(uint256 indexed orderId, address indexed keeper, uint256 amountIn, uint256 amountOut);
 
 /// @notice Emitted when an order expires
 /// @param orderId Unique identifier of the order

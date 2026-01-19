@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import { Script, console } from "forge-std/Script.sol";
+import {Script, console} from "forge-std/Script.sol";
 
 contract DeployScript is Script {
-    function setUp() public { }
+    function setUp() public {}
 
     function run() public {
         vm.startBroadcast();

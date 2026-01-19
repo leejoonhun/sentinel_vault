@@ -24,11 +24,8 @@ repos:
         files: ^keeper/
 
   # Solidity (Forge)
-  - repo: local
+  - repo: https://github.com/0xvangrim/foundry-pre-commit
+    rev: v1.0.0
     hooks:
-      - id: forge-fmt
-        name: forge fmt
-        entry: bash -c 'cd contracts && forge fmt'
-        language: system
-        files: \.sol$
-        pass_filenames: false
+      - id: format
+      # - id: snapshot

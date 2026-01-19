@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import { Order } from "../VaultTypes.sol";
+import {Order} from "../VaultTypes.sol";
 
 /// @title Sentinel Vault Interface
 /// @notice Interface for the Sentinel Vault

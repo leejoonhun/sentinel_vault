@@ -4,8 +4,8 @@ pragma solidity ^0.8.24;
 import "forge-std/Test.sol";
 import "../src/SentinelVault.sol";
 import "../src/interfaces/ISentinelVault.sol";
-import { MockERC20 } from "solmate/test/utils/mocks/MockERC20.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {MockERC20} from "solmate/test/utils/mocks/MockERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title SentinelVault Test Suite
 /// @notice Unit tests for SentinelVault core functionality
@@ -137,7 +137,7 @@ contract SentinelVaultTest is Test {
 
         // Act
         vm.prank(user);
-        (bool success,) = address(vault).call{ value: 1 ether }("");
+        (bool success,) = address(vault).call{value: 1 ether}("");
 
         // Assert
         assertTrue(success);
