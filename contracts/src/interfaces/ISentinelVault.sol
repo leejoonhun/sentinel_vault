@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Order} from "../VaultTypes.sol";
-
 /// @title Sentinel Vault Interface
 /// @notice Interface for the Sentinel Vault
 /// @dev Main entry point for user interactions
@@ -50,4 +48,36 @@ interface ISentinelVault {
 
     /// @notice Thrown when amount is zero or invalid
     error InvalidAmount();
+
+    // =========================================================================
+    // External Functions
+    // =========================================================================
+
+    /// @notice Deposit tokens into the vault
+    /// @param token The token address
+    /// @param amount The amount to deposit
+    function deposit(address token, uint256 amount) external;
+
+    /// @notice Withdraw tokens from the vault
+    /// @param token The token address
+    /// @param amount The amount to withdraw
+    function withdraw(address token, uint256 amount) external;
+
+    /// @notice Execute an arbitrary call on behalf of the vault
+    /// @dev Only callable by authorized modules
+    /// @param target Target contract address
+    /// @param value ETH value to send
+    /// @param data Calldata to execute
+    /// @return result Return data from the call
+    function invoke(address target, uint256 value, bytes calldata data) external returns (bytes memory result);
+
+    /// @notice Set module authorization status
+    /// @param module Module address
+    /// @param isAuthorized Authorization status
+    function setModule(address module, bool isAuthorized) external;
+
+    /// @notice Check if an address is an authorized module
+    /// @param module Module address to check
+    /// @return Whether the module is authorized
+    function isModule(address module) external view returns (bool);
 }
