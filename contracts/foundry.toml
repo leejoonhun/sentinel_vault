@@ -1,0 +1,55 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc = "0.8.24"
+optimizer = true
+optimizer_runs = 200
+via_ir = false
+ffi = false
+ast = true
+build_info = true
+extra_output = ["storageLayout"]
+
+# Remappings
+remappings = [
+  "@openzeppelin/=lib/openzeppelin-contracts/",
+  "solmate/=lib/solmate/",
+  "forge-std/=lib/forge-std/src/",
+]
+
+# Testing
+fuzz = { runs = 256 }
+invariant = { runs = 256, depth = 15 }
+
+# Formatter
+[fmt]
+line_length = 100
+tab_width = 4
+bracket_spacing = true
+int_types = "long"
+multiline_func_header = "params_first"
+quote_style = "double"
+number_underscore = "thousands"
+single_line_statement_blocks = "preserve"
+wrap_comments = true
+
+# CI Profile (more thorough testing)
+[profile.ci]
+fuzz = { runs = 1000 }
+invariant = { runs = 1000, depth = 50 }
+
+# RPC Endpoints (loaded from .env)
+[rpc_endpoints]
+localhost = "http://localhost:8545"
+mainnet = "${MAINNET_RPC_URL}"
+sepolia = "${SEPOLIA_RPC_URL}"
+arbitrum = "${ARBITRUM_RPC_URL}"
+base = "${BASE_RPC_URL}"
+
+# Etherscan Verification
+[etherscan]
+mainnet = { key = "${ETHERSCAN_API_KEY}" }
+sepolia = { key = "${ETHERSCAN_API_KEY}" }
+arbitrum = { key = "${ARBISCAN_API_KEY}" }
+base = { key = "${BASESCAN_API_KEY}" }
