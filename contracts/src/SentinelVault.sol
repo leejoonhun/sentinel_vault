@@ -30,7 +30,7 @@ contract SentinelVault is Ownable, ReentrancyGuard, ISentinelVault {
         _;
     }
 
-    function _onlyModule() internal {
+    function _onlyModule() internal view {
         if (!isModule[msg.sender]) {
             revert UnauthorizedModule(msg.sender);
         }
