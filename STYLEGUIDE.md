@@ -133,6 +133,10 @@ contract Oracle_Adapter { }
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+// =========================================================================
+// Enums
+// =========================================================================
+
 /// @notice Order kind enumeration
 enum OrderKind {
     STOP_LOSS,
@@ -148,7 +152,27 @@ enum OrderState {
     EXPIRED
 }
 
-/// @notice Order data structure
+// =========================================================================
+// Structs
+// =========================================================================
+
+/// @notice Trigger conditions for order execution
+struct Trigger {
+    address oracle;         // Price oracle address
+    uint256 targetPrice;    // Target price (1e18 scale)
+    uint256 deadline;       // Order expiration timestamp
+}
+
+/// @notice Execution parameters for order
+struct Execution {
+    address inputToken;     // Token to sell
+    address outputToken;    // Token to buy
+    uint256 inputAmount;    // Amount to sell
+    uint256 minOutputAmount; // Minimum amount to receive
+    uint16 slippageBps;     // Slippage tolerance in basis points (100 = 1%)
+}
+
+/// @notice Complete order data structure
 struct Order {
     uint256 id;
     address owner;
@@ -156,22 +180,7 @@ struct Order {
     OrderState state;
     Trigger trigger;
     Execution execution;
-}
-
-/// @notice Execution conditions (price, time, etc.)
-struct Trigger {
-    address oracle;
-    uint256 targetPrice;    // 1e18 scale
-    uint256 deadline;
-}
-
-/// @notice Execution parameters
-struct Execution {
-    address inputToken;
-    address outputToken;
-    uint256 inputAmount;
-    uint256 minOutputAmount;
-    uint16 slippageBps;     // basis points (100 = 1%)
+    uint256 createdAt;
 }
 ```
 
@@ -183,17 +192,24 @@ pragma solidity ^0.8.24;
 
 import {OrderKind} from "./VaultTypes.sol";
 
-/// @notice Order lifecycle events
+// =========================================================================
+// Order Lifecycle Events
+// =========================================================================
+
+/// @notice Emitted when a new order is created
 event OrderCreated(
     uint256 indexed orderId,
     address indexed owner,
     OrderKind kind
 );
 
+/// @notice Emitted when an order is updated
 event OrderUpdated(uint256 indexed orderId);
 
+/// @notice Emitted when an order is cancelled
 event OrderCancelled(uint256 indexed orderId);
 
+/// @notice Emitted when an order is executed
 event OrderExecuted(
     uint256 indexed orderId,
     address indexed keeper,
@@ -201,13 +217,20 @@ event OrderExecuted(
     uint256 amountOut
 );
 
-/// @notice Admin events
+// =========================================================================
+// Admin Events
+// =========================================================================
+
+/// @notice Emitted when keeper authorization changes
 event KeeperAuthorized(address indexed keeper, bool allowed);
 
+/// @notice Emitted when an adapter is configured
 event AdapterSet(bytes32 indexed adapterKey, address adapter);
 
+/// @notice Emitted when protocol is paused
 event Paused(address indexed by);
 
+/// @notice Emitted when protocol is unpaused
 event Unpaused(address indexed by);
 ```
 
@@ -217,26 +240,62 @@ event Unpaused(address indexed by);
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-/// @notice Authorization errors
+// =========================================================================
+// Authorization Errors
+// =========================================================================
+
+/// @notice Caller is not the order owner
 error NotOrderOwner();
+
+/// @notice Caller is not an authorized keeper
 error UnauthorizedKeeper();
+
+/// @notice Signature verification failed
 error InvalidSignature();
 
-/// @notice Order state errors
+// =========================================================================
+// Order State Errors
+// =========================================================================
+
+/// @notice Order is not in OPEN state
 error OrderNotOpen();
+
+/// @notice Order has passed its deadline
 error OrderExpired();
+
+/// @notice Order has already been executed
 error OrderAlreadyExecuted();
 
-/// @notice Execution errors
+// =========================================================================
+// Execution Errors
+// =========================================================================
+
+/// @notice Price condition not met for execution
 error TriggerNotSatisfied();
+
+/// @notice Slippage exceeds maximum allowed
 error SlippageTooHigh();
+
+/// @notice Insufficient token balance
 error InsufficientBalance();
+
+/// @notice Token transfer failed
 error TransferFailed();
 
-/// @notice Configuration errors
+// =========================================================================
+// Configuration Errors
+// =========================================================================
+
+/// @notice Required adapter not configured
 error AdapterNotSet();
+
+/// @notice Address cannot be zero
 error ZeroAddress();
+
+/// @notice Amount cannot be zero
 error ZeroAmount();
+
+/// @notice Deadline is in the past or too far
 error InvalidDeadline();
 ```
 
@@ -264,20 +323,110 @@ function _validateExecution(Execution memory exec) internal view returns (bool);
 
 ### NatSpec Comments
 
+Use `///` single-line NatSpec comments (not `/** */` block comments):
+
 ```solidity
 /// @title SentinelVault
-/// @author Sentinel Protocol Team
 /// @notice Main vault contract for automated order execution
-/// @dev Implements EIP-712 for signature verification
+/// @dev Implements Hub & Spoke architecture
 
 /// @notice Creates a new order
+/// @dev Assets must already be deposited in the vault
 /// @param order The order parameters
 /// @return orderId The unique identifier of the created order
-/// @dev Emits {OrderCreated} event
 function createOrder(Order calldata order) external returns (uint256 orderId) {
     // implementation
 }
 ```
+
+### Contract Layout Order
+
+Follow this section order within contracts:
+
+```solidity
+contract SentinelVault is Ownable, ReentrancyGuard {
+    // =========================================================================
+    // State Variables
+    // =========================================================================
+
+    /// @notice Mapping of authorized strategy modules
+    mapping(address => bool) public isModule;
+
+    /// @notice Reference to the parent vault contract
+    ISentinelVault public immutable VAULT;  // immutables use SCREAMING_SNAKE_CASE
+
+    // =========================================================================
+    // Events
+    // =========================================================================
+
+    /// @notice Emitted when a new order is created
+    event OrderCreated(uint256 indexed orderId, address indexed owner);
+
+    // =========================================================================
+    // Errors
+    // =========================================================================
+
+    /// @notice Order is not in ACTIVE state
+    error OrderNotActive();
+
+    // =========================================================================
+    // Modifiers
+    // =========================================================================
+
+    modifier onlyModule() {
+        _onlyModule();
+        _;
+    }
+
+    function _onlyModule() internal view {
+        if (!isModule[msg.sender]) {
+            revert UnauthorizedModule(msg.sender);
+        }
+    }
+
+    // =========================================================================
+    // Constructor
+    // =========================================================================
+
+    constructor() Ownable(msg.sender) {}
+
+    // =========================================================================
+    // Governance Functions (Owner)
+    // =========================================================================
+
+    // =========================================================================
+    // Core Logic (Module)
+    // =========================================================================
+
+    // =========================================================================
+    // Public Functions
+    // =========================================================================
+
+    // =========================================================================
+    // Internal Functions
+    // =========================================================================
+}
+```
+
+### Section Separators
+
+Use consistent 77-character `=` separators:
+
+```solidity
+// =========================================================================
+// Section Name
+// =========================================================================
+```
+
+### Variable Naming
+
+| Type      | Convention             | Example                 |
+| --------- | ---------------------- | ----------------------- |
+| State     | `camelCase`            | `nextOrderId`           |
+| Immutable | `SCREAMING_SNAKE_CASE` | `VAULT`, `MAX_SLIPPAGE` |
+| Constant  | `SCREAMING_SNAKE_CASE` | `PRICE_PRECISION`       |
+| Parameter | `_camelCase`           | `_orderId`, `_token`    |
+| Local     | `camelCase`            | `orderId`, `amount`     |
 
 ---
 
@@ -404,7 +553,7 @@ from ..observability.logger import get_logger
 
 log = get_logger()
 
-# ✅ Good - structured logging with rich
+# ✅ Good - structured logging with Rich
 log.info("order_created", order_id=123, owner="0x...")
 log.error("execution_failed", order_id=123, error=str(e))
 
@@ -513,7 +662,9 @@ uint16 slippageBps = 50;
 
 - [ ] Contract names are `PascalCase`?
 - [ ] Function names are `camelCase`?
-- [ ] NatSpec comments are written?
+- [ ] Immutables are `SCREAMING_SNAKE_CASE`?
+- [ ] NatSpec comments use `///` style?
+- [ ] Section separators use `// ===...===`?
 - [ ] Using Custom Errors (instead of require)?
 - [ ] Events are properly emitted?
 
@@ -523,4 +674,5 @@ uint16 slippageBps = 50;
 - [ ] Function names are `snake_case`?
 - [ ] Type hints on all functions?
 - [ ] Docstrings are written?
-- [ ] Using structlog for structured logging?
+- [ ] Using Rich-based logger for structured logging?
+- [ ] Using relative imports for internal modules?

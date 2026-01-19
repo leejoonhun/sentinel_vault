@@ -31,15 +31,15 @@ Sentinel Protocol is built on a **Hub-and-Spoke** architecture with two main com
             ┌─────────────────┼─────────────────┐
             ▼                 ▼                 ▼
 ┌───────────────────┐ ┌───────────────┐ ┌───────────────┐
-│   OrderModule     │ │  RiskModule   │ │  AuthModule   │
-│  Order lifecycle  │ │ Risk checks   │ │ Permissions   │
+│    OrderModule    │ │  RiskModule   │ │  AuthModule   │
+│  Order lifecycle  │ │  Risk checks  │ │  Permissions  │
 └───────────────────┘ └───────────────┘ └───────────────┘
                               │
-            ┌─────────────────┴─────────────────┐
-            ▼                                   ▼
+             ┌────────────────┴───────────────┐
+             ▼                                ▼
 ┌───────────────────────────┐   ┌───────────────────────────┐
-│      OracleAdapter        │   │       SwapAdapter         │
-│   (Chainlink, Pyth...)    │   │   (Uniswap, Curve...)     │
+│       OracleAdapter       │   │         SwapAdapter       │
+│    (Chainlink, Pyth...)   │   │     (Uniswap, Curve...)   │
 └───────────────────────────┘   └───────────────────────────┘
 
                     ┌─────────────────┐

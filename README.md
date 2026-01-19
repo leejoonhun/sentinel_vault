@@ -84,44 +84,45 @@ sentinel-vault/
 │   └── python-lint.yml        # Python linting
 ├── contracts/                 # On-Chain (Solidity)
 │   ├── src/
-│   │   ├── SentinelVault.sol  # Main vault contract (WIP)
+│   │   ├── SentinelVault.sol  # Main vault contract
 │   │   ├── VaultTypes.sol     # Structs & enums (Order, Trigger, Execution)
 │   │   ├── VaultErrors.sol    # Custom errors
 │   │   ├── VaultEvents.sol    # Events
 │   │   ├── interfaces/        # Contract interfaces
-│   │   │   └── ISentinelVault.sol
+│   │   │   ├── ISentinelVault.sol
+│   │   │   └── ISentinelTypes.sol
 │   │   ├── modules/           # Business logic modules
-│   │   │   ├── OrderModule.sol
-│   │   │   ├── ExecutionModule.sol
-│   │   │   ├── RiskModule.sol
-│   │   │   └── AuthModule.sol
-│   │   └── adapters/          # External integrations
-│   │       ├── OracleAdapter.sol
-│   │       └── SwapAdapter.sol
+│   │   │   └── OrderModule.sol # Conditional orders (stop-loss, take-profit)
+│   │   └── adapters/          # External integrations (planned)
 │   ├── test/
+│   │   ├── SentinelVault.t.sol
+│   │   ├── OrderModule.t.sol
+│   │   └── mocks/
+│   │       └── MockOracle.sol
 │   ├── script/
+│   │   └── Deploy.s.sol
 │   └── lib/                   # Dependencies
 │       ├── forge-std/
-│       └── openzeppelin-contracts/
+│       ├── openzeppelin-contracts/
+│       └── solmate/
 ├── keeper/                    # Off-Chain (Python)
 │   ├── sentinel_keeper/
 │   │   ├── app.py             # KeeperService entrypoint
 │   │   ├── config.py          # Settings (pydantic-settings)
+│   │   ├── main.py            # CLI entrypoint
 │   │   ├── chain/             # Blockchain layer
 │   │   │   ├── client.py      # ChainClient (Web3)
 │   │   │   ├── events.py      # EventIndexer
 │   │   │   └── tx.py          # TransactionManager
 │   │   ├── strategies/        # Strategy evaluation
-│   │   │   ├── base.py        # BaseStrategy (ABC)
-│   │   │   ├── stoploss.py    # StopLossStrategy
-│   │   │   └── twap.py        # TWAPStrategy
+│   │   │   └── base.py        # BaseStrategy (ABC)
 │   │   ├── executors/         # Order execution
 │   │   │   ├── order_executor.py
 │   │   │   └── retry.py       # Retry with backoff
 │   │   ├── models/            # Pydantic models
 │   │   │   └── order.py       # Order, Trigger, Execution
 │   │   └── observability/     # Logging & metrics
-│   │       ├── logger.py      # structlog config
+│   │       ├── logger.py      # Rich-based logging
 │   │       └── metrics.py     # MetricsCollector
 │   ├── tests/
 │   └── pyproject.toml
@@ -229,21 +230,24 @@ make keeper-local
 - [x] Repository structure & tooling
 - [x] VaultTypes, VaultErrors, VaultEvents
 - [x] ISentinelVault interface
+- [x] ISentinelTypes interface
 - [x] Python keeper scaffold (chain/, strategies/, executors/)
+- [x] Rich-based structured logging
 
-### Phase 2: The Logic 🚧
+### Phase 2: The Logic ✅
 
-- [ ] SentinelVault core implementation
-- [ ] OrderModule (create, cancel, get)
-- [ ] Price oracle integration
-- [ ] Keeper execution logic
-- [ ] Local fork testing (Anvil)
+- [x] SentinelVault core implementation (deposit, withdraw, invoke)
+- [x] OrderModule (createOrder, cancelOrder, executeOrder)
+- [x] MockOracle for testing
+- [x] SentinelVault test suite (8 tests)
+- [x] OrderModule test suite (3 tests)
 
-### Phase 3: The Brand 📋
+### Phase 3: The Brand 🚧
 
 - [ ] SwapAdapter (Uniswap V3)
 - [ ] OracleAdapter (Chainlink)
-- [ ] Comprehensive test suite
+- [ ] Keeper execution logic integration
+- [ ] Local fork testing (Anvil)
 - [ ] Security audit preparation
 - [ ] Testnet deployment
 

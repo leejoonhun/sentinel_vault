@@ -177,6 +177,37 @@ event Unpaused(address indexed by);
 
 ## Interface (`ISentinelVault.sol`)
 
+The vault interface defines the core contract API:
+
+### Events
+
+```solidity
+/// @notice Emitted when tokens are deposited into the vault
+event Deposit(address indexed token, address indexed from, uint256 amount);
+
+/// @notice Emitted when tokens are withdrawn from the vault
+event Withdraw(address indexed token, address indexed to, uint256 amount);
+
+/// @notice Emitted when a module's authorization status changes
+event ModuleSet(address indexed module, bool isAuthorized);
+
+/// @notice Emitted when a module executes an external call
+event Executed(address indexed module, address indexed target, uint256 value, bytes data);
+```
+
+### Errors
+
+```solidity
+/// @notice Thrown when caller is not an authorized module
+error UnauthorizedModule(address caller);
+
+/// @notice Thrown when an external call fails
+error TargetCallFailed(address target, bytes returnData);
+
+/// @notice Thrown when amount is zero or invalid
+error InvalidAmount();
+```
+
 ### User Functions
 
 ```solidity
@@ -185,85 +216,86 @@ function deposit(address token, uint256 amount) external;
 
 /// @notice Withdraw tokens from the vault
 function withdraw(address token, uint256 amount) external;
-
-/// @notice Get user's balance
-function balanceOf(address user, address token) external view returns (uint256);
 ```
 
-### Order Functions
+### Module Functions
 
 ```solidity
-/// @notice Create a new order
-function createOrder(Order calldata order) external returns (uint256 orderId);
-
-/// @notice Cancel an existing order
-function cancelOrder(uint256 orderId) external;
-
-/// @notice Get order details
-function getOrder(uint256 orderId) external view returns (Order memory);
-
-/// @notice Get all orders for an owner
-function getOrdersByOwner(address owner) external view returns (uint256[] memory);
-```
-
-### Keeper Functions
-
-```solidity
-/// @notice Execute a single order (keeper only)
-function executeOrder(uint256 orderId) external;
-
-/// @notice Execute multiple orders (keeper only)
-function executeBatch(uint256[] calldata orderIds) external;
+/// @notice Execute an arbitrary call on behalf of the vault
+/// @dev Only callable by authorized modules
+function invoke(
+    address target,
+    uint256 value,
+    bytes calldata data
+) external returns (bytes memory result);
 ```
 
 ### Admin Functions
 
 ```solidity
-/// @notice Add/remove keeper
-function addKeeper(address keeper) external;
-function removeKeeper(address keeper) external;
+/// @notice Set module authorization status
+function setModule(address module, bool isAuthorized) external;
 
-/// @notice Configure adapters
-function setAdapter(bytes32 adapterKey, address adapter) external;
-
-/// @notice Emergency controls
-function pause() external;
-function unpause() external;
+/// @notice Check if an address is an authorized module
+function isModule(address module) external view returns (bool);
 ```
 
 ---
 
 ## Modules
 
-### OrderModule
+### OrderModule (`modules/OrderModule.sol`)
 
-Manages order lifecycle:
+Manages conditional orders (stop-loss, take-profit, TWAP):
 
-- `_validateOrder()`: Check order parameters
-- `_updateOrderState()`: State transitions
-- `_isOrderExecutable()`: Check if ready
+```solidity
+/// @notice Create a new conditional order
+function createOrder(
+    address _inputToken,
+    address _outputToken,
+    uint256 _inputQuantity,
+    uint256 _targetPrice,
+    OrderType _orderType
+) external returns (uint256);
 
-### ExecutionModule
+/// @notice Cancel an existing order
+function cancelOrder(uint256 _orderId) external;
 
-Handles swap execution:
+/// @notice Execute an order when conditions are met
+function executeOrder(
+    uint256 _orderId,
+    address _target,
+    bytes calldata _swapData
+) external;
+```
+
+**Key Features:**
+
+- `VAULT` immutable reference to parent vault
+- Oracle-based price verification
+- State transitions: ACTIVE → EXECUTED | CANCELLED
+
+### ExecutionModule (Planned)
+
+Handles swap execution via adapters:
 
 - `_executeSwap()`: Call DEX adapter
 - `_validateSlippage()`: Check output amount
 - `_updateBalances()`: Adjust user balances
 
-### RiskModule
+### RiskModule (Planned)
 
 Risk management:
 
 - `_checkPositionLimit()`: Max order size
 - `_checkExposure()`: Total exposure limits
 
-### AuthModule
+### AuthModule (Planned)
 
 Access control:
 
 - `_onlyOwner()`: Admin functions
-- `_onlyKeeper()`: Keeper functions
+- `_onlyModule()`: Authorized module functions
 - `_onlyOrderOwner()`: Order owner functions
 
 ---
