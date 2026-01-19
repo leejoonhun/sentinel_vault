@@ -39,10 +39,12 @@ All contributors should follow this guide to maintain a consistent codebase.
 sentinel-vault/
 ├── contracts/                   # On-Chain (Solidity)
 │   ├── src/
-│   │   ├── SentinelVault.sol
+│   │   ├── SentinelVault.sol    # main vault contract
 │   │   ├── VaultTypes.sol       # struct/enum definitions
 │   │   ├── VaultErrors.sol      # custom errors
 │   │   ├── VaultEvents.sol      # events
+│   │   ├── interfaces/          # contract interfaces
+│   │   │   └── ISentinelVault.sol
 │   │   ├── modules/             # internal logic modules
 │   │   │   ├── OrderModule.sol
 │   │   │   ├── ExecutionModule.sol
@@ -52,7 +54,8 @@ sentinel-vault/
 │   │       ├── OracleAdapter.sol
 │   │       └── SwapAdapter.sol
 │   ├── test/
-│   └── script/
+│   ├── script/
+│   └── lib/                     # dependencies (forge-std, openzeppelin)
 ├── keeper/                      # Off-Chain (Python)
 │   ├── sentinel_keeper/
 │   │   ├── __init__.py
@@ -85,6 +88,7 @@ sentinel-vault/
 
 | Directory     | Role                      | Separation Criteria                 |
 | ------------- | ------------------------- | ----------------------------------- |
+| `interfaces/` | Contract interfaces       | Public API definitions (Solidity)   |
 | `modules/`    | Core business logic       | Operates only within protocol       |
 | `adapters/`   | External integrations     | External dependencies (Oracle, DEX) |
 | `chain/`      | Blockchain infrastructure | RPC, events, transactions           |
@@ -103,6 +107,8 @@ contracts/src/
 ├── VaultTypes.sol           # Types (struct, enum)
 ├── VaultErrors.sol          # Custom Errors
 ├── VaultEvents.sol          # Events
+├── interfaces/              # Contract interfaces
+│   └── ISentinelVault.sol
 ├── modules/                 # Internal Logic
 └── adapters/                # External Integration
 ```

@@ -84,23 +84,25 @@ sentinel-vault/
 │   └── python-lint.yml        # Python linting
 ├── contracts/                 # On-Chain (Solidity)
 │   ├── src/
+│   │   ├── SentinelVault.sol  # Main vault contract (WIP)
 │   │   ├── VaultTypes.sol     # Structs & enums (Order, Trigger, Execution)
 │   │   ├── VaultErrors.sol    # Custom errors
 │   │   ├── VaultEvents.sol    # Events
 │   │   ├── interfaces/        # Contract interfaces
 │   │   │   └── ISentinelVault.sol
-│   │   ├── core/              # Core vault logic
 │   │   ├── modules/           # Business logic modules
 │   │   │   ├── OrderModule.sol
 │   │   │   ├── ExecutionModule.sol
 │   │   │   ├── RiskModule.sol
 │   │   │   └── AuthModule.sol
-│   │   ├── adapters/          # External integrations
-│   │   │   ├── OracleAdapter.sol
-│   │   │   └── SwapAdapter.sol
-│   │   └── libraries/         # Reusable utilities
+│   │   └── adapters/          # External integrations
+│   │       ├── OracleAdapter.sol
+│   │       └── SwapAdapter.sol
 │   ├── test/
-│   └── script/
+│   ├── script/
+│   └── lib/                   # Dependencies
+│       ├── forge-std/
+│       └── openzeppelin-contracts/
 ├── keeper/                    # Off-Chain (Python)
 │   ├── sentinel_keeper/
 │   │   ├── app.py             # KeeperService entrypoint
@@ -124,6 +126,10 @@ sentinel-vault/
 │   ├── tests/
 │   └── pyproject.toml
 ├── docs/                      # Documentation
+│   ├── ARCHITECTURE.md        # System architecture
+│   ├── CONTRACTS.md           # Contract documentation
+│   ├── KEEPER.md              # Keeper bot documentation
+│   └── README.md              # Docs index
 ├── STYLEGUIDE.md              # Naming conventions
 ├── CONTRIBUTING.md            # Contribution guide
 ├── docker-compose.yml         # Local dev environment
