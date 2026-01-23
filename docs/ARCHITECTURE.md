@@ -6,10 +6,12 @@
 
 ## Overview
 
-Sentinel Protocol is built on a **Hub-and-Spoke** architecture with two main components:
+Sentinel Protocol is built on a **"One Brain, Many Hands"** architecture designed for multi-chain support:
 
-1. **On-Chain (Solidity)**: Smart contracts managing assets and order execution
-2. **Off-Chain (Python)**: Keeper bots monitoring conditions and triggering executions
+1. **On-Chain Contracts**: Chain-specific smart contracts/programs
+   - **EVM (Ethereum, Arbitrum, Base)**: Solidity contracts via Foundry
+   - **SVM (Solana)**: Rust programs via Anchor
+2. **Off-Chain Keeper (Python)**: Unified keeper bot that controls all chains through abstraction
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
@@ -17,36 +19,75 @@ Sentinel Protocol is built on a **Hub-and-Spoke** architecture with two main com
 │                    (Web App / SDK / Direct)                      │
 └─────────────────────────────┬────────────────────────────────────┘
                               │
-                              ▼
+              ┌───────────────┴───────────────┐
+              ▼                               ▼
+┌─────────────────────────┐     ┌─────────────────────────┐
+│   contracts-evm/        │     │   contracts-svm/        │
+│   (Solidity/Foundry)    │     │   (Rust/Anchor)         │
+│                         │     │                         │
+│  ┌───────────────────┐  │     │  ┌───────────────────┐  │
+│  │  SentinelVault    │  │     │  │  sentinel_vault   │  │
+│  │  - deposit()      │  │     │  │  - initialize()   │  │
+│  │  - createOrder()  │  │     │  │  - create_order() │  │
+│  │  - executeOrder() │  │     │  │  - execute_order()│  │
+│  └───────────────────┘  │     │  └───────────────────┘  │
+│                         │     │                         │
+│  Ethereum, Arbitrum,    │     │  Solana mainnet,        │
+│  Base, Optimism...      │     │  devnet                 │
+└────────────┬────────────┘     └────────────┬────────────┘
+             │                               │
+             └───────────────┬───────────────┘
+                             │
+                             ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│                       SENTINEL VAULT                             │
-│                   (Asset Custody & Orders)                       │
+│                     KEEPER SERVICE (Python)                      │
 │  ┌────────────────────────────────────────────────────────────┐  │
-│  │  - deposit() / withdraw()                                  │  │
-│  │  - createOrder() / cancelOrder()                           │  │
-│  │  - executeOrder() (keeper only)                            │  │
-│  └────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────┬────────────────────────────────────┘
-                              │
-            ┌─────────────────┼─────────────────┐
-            ▼                 ▼                 ▼
-┌───────────────────┐ ┌───────────────┐ ┌───────────────┐
-│    OrderModule    │ │  RiskModule   │ │  AuthModule   │
-│  Order lifecycle  │ │  Risk checks  │ │  Permissions  │
-└───────────────────┘ └───────────────┘ └───────────────┘
-                              │
-             ┌────────────────┴───────────────┐
-             ▼                                ▼
-┌───────────────────────────┐   ┌───────────────────────────┐
-│       OracleAdapter       │   │         SwapAdapter       │
-│    (Chainlink, Pyth...)   │   │     (Uniswap, Curve...)   │
-└───────────────────────────┘   └───────────────────────────┘
+│  │              ChainClient (Abstract Base Class)             │  │
+│  │   get_price() | get_active_orders() | execute_order()      │  │
+│  └─────────────────────────┬──────────────────────────────────┘  │
+│                            │                                     │
+│            ┌───────────────┴───────────────┐                    │
+│            ▼                               ▼                    │
+│   ┌─────────────────┐            ┌─────────────────┐            │
+│   │   EVMClient     │            │  SolanaClient   │            │
+│   │   (web3.py)     │            │  (solana-py)    │            │
+│   └─────────────────┘            └─────────────────┘            │
+│                                                                  │
+│   Strategy → Executor → One interface, multiple chains           │
+└──────────────────────────────────────────────────────────────────┘
+```
 
-                    ┌─────────────────┐
-                    │     KEEPER      │  ◄── Off-Chain (Python)
-                    │   (sentinel_    │      Monitors conditions
-                    │    keeper)      │      Triggers executions
-                    └─────────────────┘
+---
+
+## Repository Structure
+
+```
+sentinel-vault/
+├── contracts-evm/           # EVM contracts (Ethereum, Arbitrum, Base)
+│   ├── src/                 #   Solidity source files
+│   │   ├── SentinelVault.sol
+│   │   ├── modules/
+│   │   └── adapters/
+│   ├── test/                #   Forge tests
+│   └── foundry.toml
+│
+├── contracts-svm/           # SVM contracts (Solana)
+│   ├── programs/            #   Anchor programs
+│   │   └── sentinel_vault/
+│   │       └── src/lib.rs   #   Rust program code
+│   ├── tests/               #   Anchor tests
+│   └── Anchor.toml
+│
+├── keeper/                  # Unified Python keeper
+│   └── sentinel_keeper/
+│       ├── chain/           #   Chain abstraction layer
+│       │   ├── base.py      #     ChainClient ABC
+│       │   ├── evm.py       #     EVM implementation
+│       │   └── svm.py       #     Solana implementation
+│       ├── strategies/      #   Trading strategies
+│       └── executors/       #   Order executors
+│
+└── docs/                    # Documentation
 ```
 
 ---
@@ -56,46 +97,76 @@ Sentinel Protocol is built on a **Hub-and-Spoke** architecture with two main com
 ### 1. Non-Custodial
 
 - Users maintain full control of their assets
-- Assets stored in user-specific vaults (mapping)
+- Assets stored in user-specific vaults/PDAs
 - Protocol cannot move funds without user-signed orders
 
 ### 2. Separation of Concerns
 
-| Layer    | Responsibility            | Location        |
-| -------- | ------------------------- | --------------- |
-| Vault    | Asset custody, order CRUD | `SentinelVault` |
-| Modules  | Business logic            | `modules/`      |
-| Adapters | External integrations     | `adapters/`     |
-| Keeper   | Condition monitoring      | `keeper/`       |
+| Layer    | Responsibility            | EVM Location    | SVM Location          |
+| -------- | ------------------------- | --------------- | --------------------- |
+| Vault    | Asset custody, order CRUD | `SentinelVault` | `sentinel_vault` prog |
+| Modules  | Business logic            | `modules/`      | (inline in lib.rs)    |
+| Adapters | External integrations     | `adapters/`     | CPI calls             |
+| Keeper   | Condition monitoring      | `keeper/`       | `keeper/` (same)      |
 
-### 3. Upgrade Path
+### 3. Chain Abstraction
 
-- Modules and Adapters are swappable via admin functions
-- Core vault logic is immutable after deployment
-- Emergency pause mechanism for critical issues
+The Keeper uses the **Strategy Pattern** to support multiple chains:
+
+```python
+from sentinel_keeper.chain import EVMClient, SolanaClient
+
+# Same interface, different chains
+clients: list[ChainClient] = [
+    EVMClient(rpc_url="https://arb1.arbitrum.io/rpc", ...),
+    SolanaClient(rpc_url="https://api.mainnet-beta.solana.com", ...),
+]
+
+for client in clients:
+    orders = await client.get_active_orders(vault_address)
+    for order in orders:
+        if strategy.should_execute(order):
+            await client.execute_order(vault_address, order.id)
+```
 
 ---
 
-## On-Chain Components
+## EVM vs SVM: Key Differences
 
-### SentinelVault (Hub)
+| Aspect      | EVM (Ethereum)            | SVM (Solana)                 |
+| ----------- | ------------------------- | ---------------------------- |
+| Language    | Solidity                  | Rust                         |
+| State Model | Contract-internal storage | Program + Account separation |
+| Execution   | Sequential                | Parallel (faster for HFT)    |
+| Tooling     | Foundry                   | Anchor                       |
+| Gas/Fees    | Variable (EIP-1559)       | Fixed compute units          |
+| Oracles     | Chainlink                 | Pyth, Switchboard            |
+| DEXs        | Uniswap, Curve            | Jupiter, Raydium             |
 
-The central contract that:
+### EVM Storage vs Solana PDAs
 
-- Holds user balances (`mapping(address => mapping(address => uint256))`)
-- Manages order lifecycle (create → execute/cancel)
-- Delegates execution logic to modules/adapters
+**EVM (Storage in Contract):**
 
 ```solidity
-contract SentinelVault {
-    mapping(address user => mapping(address token => uint256 balance)) public balances;
-    mapping(uint256 orderId => Order) public orders;
-    mapping(address => bool) public keepers;
+mapping(address => mapping(address => uint256)) public balances;
+mapping(uint256 => Order) public orders;
+```
 
-    function deposit(address token, uint256 amount) external;
-    function createOrder(Order calldata order) external returns (uint256);
-    function executeOrder(uint256 orderId) external; // keeper only
+**Solana (Separate Accounts):**
+
+```rust
+#[account]
+pub struct Vault {
+    pub owner: Pubkey,
+    pub order_count: u64,
 }
+
+#[account]
+pub struct Order {
+    pub vault: Pubkey,
+    pub trigger_price: u64,
+}
+// Orders are PDAs derived from vault + order_id
 ```
 
 ### Modules (Spoke)
@@ -260,10 +331,20 @@ Keeper              SentinelVault       OracleAdapter      SwapAdapter
 
 ## Future Considerations
 
-### Multi-Chain
+### Strategic Roadmap
 
-- Deploy on Arbitrum, Base, Polygon
-- Cross-chain message passing (LayerZero, Wormhole)
+| Phase      | Focus                                          | Status         |
+| ---------- | ---------------------------------------------- | -------------- |
+| **Step 1** | Repo structure refactoring (`evm/` + `svm/`)   | ✅ Complete    |
+| **Step 2** | Python Keeper chain abstraction                | ✅ Complete    |
+| **Step 3** | EVM feature completion (Stop-Loss, Flash Loan) | 🔄 In Progress |
+| **Step 4** | Solana program implementation (Anchor)         | 📋 Planned     |
+
+### Multi-Chain Support
+
+- **EVM L2s**: Arbitrum, Base, Optimism (same Solidity code)
+- **Solana**: Native Rust program for high-frequency trading
+- Cross-chain message passing (LayerZero, Wormhole) - future
 
 ### Advanced Strategies
 
@@ -273,5 +354,5 @@ Keeper              SentinelVault       OracleAdapter      SwapAdapter
 
 ### MEV Protection
 
-- Flashbots integration for private mempools
-- Time-delayed execution windows
+- Flashbots integration for private mempools (EVM)
+- Jito bundles for MEV protection (Solana)
